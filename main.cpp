@@ -119,25 +119,34 @@ int getDay(string fileName) {
   return lineCount;
 }
 
-vector<int> computeForgetDay() {
-    // 算出每一天与今天相差几天
-    int today = getDay("memorized.log");
-    vector<int> res;
-    int dayCount;
-    for (int i = 1; i < today; i++){
-        dayCount = today - i;
-        res.push_back(dayCount);
+template <typename T>
+bool isArray(T* arr, int size, T target) {
+    // 判断元素是否在数组内
+    auto it = std::find(arr, arr + size, target);
+    if (it != arr + size) {
+        return true;
     }
-    return res;
+    return false;
 }
 
-vector<string> getPreWord(string fileName) {
+vector<int> getPreDay() {
+    // 获得以前的遗忘的单词天数
+    vector<int> preDay;
     int row = 0;
-
+    int today = getDay("memorized.log");
+    int ForgettingArray[7] = {1, 2, 4, 7, 15, 30, 90};
+    for (int i = 1; i < today; i++) {
+        if (isArray(ForgettingArray, 7, i)) {
+            preDay.push_back(i);
+        }
+    }
+    return preDay;
 }
 
 vector<string> mixWord() {
+    // 将今天学的单词与以前遗忘的单词混合
     com word = readJson("dictionary.json", 1, 100);
+    vector<int> preDay = getPreDay();
     vector<string> todayWord = word.word;
     vector<string> previousWord;
 }
