@@ -11,9 +11,11 @@
 #include <algorithm>
 #include <fstream>
 #include <random>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "sstream"
 
 using nlohmann::json;
 using std::map;
@@ -26,7 +28,6 @@ struct com {
   vector<string> word;
   vector<string> chinese;
 };
-
 com readJson(string fileName, int start, int end) {
   // 读取单词表
   std::ifstream file(fileName);
@@ -54,6 +55,7 @@ com readJson(string fileName, int start, int end) {
   return res;
 }
 
+
 int randomNum(int range) {
   // 获取随机索引
   static std::random_device rd;
@@ -76,13 +78,15 @@ unordered_map<string, int> getCountWord(vector<string> word) {
   return res;
 }
 
-void saveMemorizedJson(string fileName, string word) {
+void saveMemorizedJson(string fileName, string word, string chinese) {
   // 将已经学会的单词保存到json文件里
   vector<string> rememberWord;
+  vector<string> rememberChinese;
   rememberWord.push_back(word);
+  rememberChinese.push_back(chinese);
   std::ofstream outFile(fileName, std::ios::app);
-  for (string w : rememberWord) {
-    outFile << w << " ";
+  for (int i = 0; i < rememberChinese.size(); i++) {
+    outFile << rememberWord[i] << " "<<rememberChinese[i]<< " ";
   }
   outFile.close();
 }
@@ -129,48 +133,71 @@ bool isArray(T* arr, int size, T target) {
     return false;
 }
 
-vector<int> getPreDay() {
-    // 获得以前的遗忘的单词天数
+void getPreDayWord(string fileName, com& dayWord) {
+    // 将需要记忆的行与今天要记的单词融合
+    // 获得需要记忆单词是哪一行
     vector<int> preDay;
-    int row = 0;
-    int today = getDay("memorized.log");
+    int today = getDay(fileName);
+    com appendWord;
     int ForgettingArray[7] = {1, 2, 4, 7, 15, 30, 90};
-    for (int i = 1; i < today; i++) {
-        if (isArray(ForgettingArray, 7, i)) {
-            preDay.push_back(i);
+
+    std::ifstream file(fileName);
+    string line;
+    int count = today;
+    while (std::getline(file, line)) {
+        count--;    // count就是距离该行距离今天的天数
+        if (isArray(ForgettingArray, 7, count)) {
+            vector<string> tokens;
+            string wordChinese;
+            int judge = 0;
+            std::stringstream ss(line);
+            while (ss >> wordChinese) {
+                if (judge % 2 == 0) {
+                    dayWord.word.push_back(wordChinese);
+                }
+
+                if (judge % 2 == 1) {
+                    dayWord.chinese.push_back(wordChinese);
+                }
+                judge++;
+            }
         }
     }
-    return preDay;
 }
 
-vector<string> mixWord() {
-    // 将今天学的单词与以前遗忘的单词混合
-    com word = readJson("dictionary.json", 1, 100);
-    vector<int> preDay = getPreDay();
-    vector<string> todayWord = word.word;
-    vector<string> previousWord;
-}
+// vector<string> mixWord() {
+//     // 将今天学的单词与以前遗忘的单词混合
+//     com word = readJson("dictionary.json", 1, 100);
+//     vector<int> preDay = getPreDay();
+//     vector<string> todayWord = word.word;
+//     vector<string> previousWord;
+//     return previousWord;
+// }
 
 template <typename T>
 vector<T> slice(const vector<T>& arr, int start, int end){
     // 对数组进行切片操作
-    if (start < 0 || end > arr.size() || end > start) std::cout<<"索引范围错误"<<std::endl;
+    if (start < 0 || end > (int)arr.size() || end < start) std::cout<<"索引范围错误"<<std::endl;
 
     return vector<T>(arr.begin() + start, arr.begin() + end);
+}
+
+void init() {
+  com day_word = readJson("dictionary.json", 1, 100);
+  vector<string> sub_day_word = slice(day_word.word, 4, 8);
+
 }
 
 int main() {
   vector<string> familiar;
   vector<string> res;
 
-  com day_word = readJson("dictionary.json", 1, 100);
-  vector<string> sub_day_word = slice(day_word.word, 0, 10);
   int row = sub_day_word.size();
 
   unordered_map<string, int> count_word = getCountWord(day_word.word);
 
   int choice, rad;
-    int count = 0;
+  int count = 0;
   rad = randomNum(row);
   while (!day_word.word.empty()) {
     string word = day_word.word[rad];
@@ -178,10 +205,10 @@ int main() {
     std::cout << word << std::endl;
     std::cout << "1.认识\t2.模糊\t3.陌生" << std::endl;
     std::cin >> choice;
+    std::cout << chinese << std::endl;
     switch (choice) {}
     if (choice == 1) {
       familiar.push_back(word);
-      std::cout << chinese << std::endl;
       std::cout << std::endl;
       std::cout << std::endl;
 
@@ -210,7 +237,7 @@ int main() {
             res.push_back(word);
             count++;
             
-            saveMemorizedJson("memorized.log", word);
+            saveMemorizedJson("memorized.log", word, chinese);
             
             // 注意：如果 row 依赖于 count，确保这里 row 的值是预期的
         } 
