@@ -162,6 +162,9 @@ void getPreDayWord(string fileName, com& dayWord) {
                 judge++;
             }
         }
+        if (count == 0) {
+            break;
+        }
     }
 }
 
@@ -182,33 +185,34 @@ vector<T> slice(const vector<T>& arr, int start, int end){
     return vector<T>(arr.begin() + start, arr.begin() + end);
 }
 
-void init() {
-  com day_word = readJson("dictionary.json", 1, 100);
-  vector<string> sub_day_word = slice(day_word.word, 4, 8);
-
-}
 
 int main() {
-  vector<string> familiar;
-  vector<string> res;
+  vector<string> res;  // 学完的单词
 
-  int row = sub_day_word.size();
+  com day_word = readJson("dictionary.json", 1, 100);   // 今日学习单词库
+  getPreDayWord("memorized.log", day_word);
+
+  vector<string> sub_day_word = slice(day_word.word, 10, 15);
+  vector<string> sub_day_chinese = slice(day_word.chinese, 10, 15);
+
 
   unordered_map<string, int> count_word = getCountWord(day_word.word);
 
   int choice, rad;
   int count = 0;
-  rad = randomNum(row);
-  while (!day_word.word.empty()) {
-    string word = day_word.word[rad];
-    string chinese = day_word.chinese[rad];
+  while (!sub_day_word.empty()) {
+    int currentSize = sub_day_word.size();
+    if (currentSize == 0) break; // 防御性编程
+    int rad = randomNum(currentSize); // randomNum 应该接受 [0, size) 范围
+                                      
+    string word = sub_day_word[rad];
+    string chinese = sub_day_chinese[rad];
     std::cout << word << std::endl;
     std::cout << "1.认识\t2.模糊\t3.陌生" << std::endl;
     std::cin >> choice;
     std::cout << chinese << std::endl;
     switch (choice) {}
     if (choice == 1) {
-      familiar.push_back(word);
       std::cout << std::endl;
       std::cout << std::endl;
 
@@ -229,16 +233,18 @@ int main() {
 
     if (count_word[word] == 5) {
         // 1. 查找元素
-        auto it = std::find(day_word.word.begin(), day_word.word.end(), word);
-        
+        auto itWord = std::find(sub_day_word.begin(), sub_day_word.end(), word);
+        auto itChinese = std::find(sub_day_chinese.begin(), sub_day_chinese.end(), chinese);
+
         // 2. 【关键修复】检查是否真的找到了该元素
-        if (it != day_word.word.end()) {
-            day_word.word.erase(it); // 安全删除
+        if (itWord != sub_day_word.end()) {
+            sub_day_word.erase(itWord); // 安全删除
+            sub_day_chinese.erase(itChinese);
             res.push_back(word);
             count++;
-            
+
             saveMemorizedJson("memorized.log", word, chinese);
-            
+
             // 注意：如果 row 依赖于 count，确保这里 row 的值是预期的
         } 
         else {
@@ -246,7 +252,6 @@ int main() {
         }
     }
 
-    rad = randomNum(row - count); 
   }
   lineFeed("memorized.log");
   std::cout << "单词学完了！" << std::endl;
